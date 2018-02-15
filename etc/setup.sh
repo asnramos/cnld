@@ -57,11 +57,14 @@ echo "*** Setting CNL_APP_MONITOR_TIME=$repo_time"
 sudo sh -c "echo 'CNL_APP_MONITOR_TIME=$repo_time' >> /etc/cnl.conf"
 
 echo "********************************************************"
-echo "*** Generate SSH keys. Please use default paths.     ***"
+echo "*** Generate SSH keys.                               ***"
 echo "*** If you want to keep the current key answer 'no'. ***"
 echo "********************************************************"
-ssh-keygen
-sudo ssh-keygen
+ssh-keygen -f "$HOME/.ssh/id_rsa.cnl"
+echo "*** Setting CNL_SSH_KEY=$HOME/.ssh/id_rsa.cnl"
+sudo sh -c "echo 'CNL_SSH_KEY=$HOME/.ssh/id_rsa.cnl' >> /etc/cnl.conf"
+export CNL_SSH_KEY=$HOME/.ssh/id_rsa.cnl
+
 echo "*************************************"
 echo "*** Copying systemd unit files... ***"
 echo "*************************************"

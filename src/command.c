@@ -52,7 +52,7 @@ static int cnl_config_set_cb(const char * cmd, char * rsp, size_t rsp_len);
 static int cnl_config_get_cb(const char * cmd, char * rsp, size_t rsp_len);
 static int cnl_start_cb(const char * cmd, char * rsp, size_t rsp_len);
 static int cnl_stop_cb(const char * cmd, char * rsp, size_t rsp_len);
-static int cnl_update_server_cb(const char * cmd, char * rsp, size_t rsp_len);
+static int cnl_update_cnld_cb(const char * cmd, char * rsp, size_t rsp_len);
 static int cnl_coretemp_cb(const char * cmd, char * rsp, size_t rsp_len);
 static int cnl_blinkme_cb(const char * cmd, char * rsp, size_t rsp_len);
 
@@ -79,7 +79,7 @@ static cnl_cmd_t commands[] = {
 		{"config set", cnl_config_set_cb},
 		{"stop", cnl_stop_cb},
 		{"start", cnl_start_cb},
-		{"srvupd", cnl_update_server_cb},
+		{"cnldupd", cnl_update_cnld_cb},
 		{"coretemp", cnl_coretemp_cb},
 		{"blinkme", cnl_blinkme_cb},
 		/* always end with NULL */
@@ -267,7 +267,7 @@ static int cnl_status_cb(const char * cmd, char * rsp, size_t rsp_len)
 	int rv = -1;
 	if (strstr(cmd, "status app")) {
 		rv = cnl_run("systemctl status cnl_app.service", rsp, rsp_len);
-	} else if (strstr(cmd, "status server")) {
+	} else if (strstr(cmd, "status cnld")) {
 		rv = cnl_run("systemctl status cnld.service", rsp, rsp_len);
 	} else if (strstr(cmd, "status ssh")) {
 		rv = cnl_run("systemctl status cnl_ssh.service", rsp, rsp_len);
@@ -292,12 +292,12 @@ static int cnl_journal_cb(const char * cmd, char * rsp, size_t rsp_len)
 	int rv = -1;
 	if (strstr(cmd, "journal app")) {
 		rv = cnl_run("journalctl -u cnl_app.service -n 50", rsp, rsp_len);
-	} else if (strstr(cmd, "journal server")) {
+	} else if (strstr(cmd, "journal cnld")) {
 		rv = cnl_run("journalctl -u cnld.service -n 50", rsp, rsp_len);
 	} else if (strstr(cmd, "journal ssh")) {
 		rv = cnl_run("journalctl -u cnl_ssh.service -n 50", rsp, rsp_len);
 	} else {
-		strcpy(rsp, "use: journal app|server|ssh\n");
+		strcpy(rsp, "use: journal app|cnld|ssh\n");
 		rv = 0;
 	}
 	return rv;
@@ -312,7 +312,9 @@ static int cnl_serial_cb(const char * cmd, char * rsp, size_t rsp_len)
 /* pubkey: get public key */
 static int cnl_pubkey_cb(const char * cmd, char * rsp, size_t rsp_len)
 {
-	return cnl_run("cat /root/.ssh/id_rsa.pub", rsp, rsp_len);
+	char icmd[PATH_MAX];
+	sprintf(icmd, "cat %s.pub", getenv("CNL_SSH_KEY"));
+	return cnl_run(icmd, rsp, rsp_len);
 }
 
 /* clone: clone app repository */
@@ -323,8 +325,8 @@ static int cnl_clone_cb(const char * cmd, char * rsp, size_t rsp_len)
 	char irsp[PATH_MAX];
 	irsp[0] = 0;
 	icmd[0] = 0;
-	snprintf(icmd, PATH_MAX, "GIT_SSH_COMMAND=\"ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no\" git clone %s %s 2>&1",
-			getenv("CNL_APP_URL"), getenv("CNL_APP_PATH"));
+	snprintf(icmd, PATH_MAX, "GIT_SSH_COMMAND=\"ssh -i %s -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no\" git clone %s %s 2>&1",
+			getenv("CNL_SSH_KEY"), getenv("CNL_APP_URL"), getenv("CNL_APP_PATH"));
 	rv = cnl_run(icmd, irsp, PATH_MAX);
 	snprintf(rsp, rsp_len, "%s\n%s\ncommand returned %d\n", icmd, irsp, rv);
 	check_app_update(irsp);
@@ -338,8 +340,8 @@ static int cnl_pull_cb(const char * cmd, char * rsp, size_t rsp_len)
 	char irsp[PATH_MAX];
 	irsp[0] = 0;
 	icmd[0] = 0;
-	snprintf(icmd, PATH_MAX, "cd %s; GIT_SSH_COMMAND=\"ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no\" git pull 2>&1",
-			getenv("CNL_APP_PATH"));
+	snprintf(icmd, PATH_MAX, "cd %s; GIT_SSH_COMMAND=\"ssh -i %s -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no\" git pull 2>&1",
+			getenv("CNL_APP_PATH"), getenv("CNL_SSH_KEY"));
 	int rv = cnl_run(icmd, irsp, PATH_MAX);
 	snprintf(rsp, rsp_len, "%s\n%s\ncommand returned %d\n", icmd, irsp, rv);
 	check_app_update(irsp);
@@ -422,12 +424,12 @@ static int cnl_blinkme_cb(const char * cmd, char * rsp, size_t rsp_len)
 	return 0;
 }
 
-static int cnl_update_server_cb(const char * cmd, char * rsp, size_t rsp_len)
+static int cnl_update_cnld_cb(const char * cmd, char * rsp, size_t rsp_len)
 {
 	char icmd[PATH_MAX];
 	snprintf(icmd, PATH_MAX,
-			"cd %s; GIT_SSH_COMMAND=\"ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no\" git pull 2>&1; make update;",
-			getenv("CNL_PATH"));
+			"cd %s; GIT_SSH_COMMAND=\"ssh -i %s -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no\" git pull 2>&1; make update;",
+			getenv("CNL_PATH"), getenv("CNL_SSH_KEY"));
 #if 0
 	return cnl_run(icmd, rsp, rsp_len);
 #else

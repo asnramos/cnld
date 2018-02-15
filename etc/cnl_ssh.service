@@ -20,7 +20,7 @@ After=network.target
 
 [Service]
 EnvironmentFile=/etc/cnl.conf
-ExecStart=/usr/bin/autossh -M 0 -o "ServerAliveInterval 30" -o "ServerAliveCountMax 3" -N ${CNL_SSH_USER}@${CNL_SSH_SERVER_URL} -p${CNL_SSH_SERVER_PORT} -R ${CNL_SSH_REMOTE_PORT}:localhost:${CNL_SSH_LOCAL_PORT}
+ExecStart=/usr/bin/autossh -M 0 -- -i ${CNL_SSH_KEY} -o "ServerAliveInterval 30" -o "ServerAliveCountMax 3" -N ${CNL_SSH_USER}@${CNL_SSH_SERVER_URL} -p${CNL_SSH_SERVER_PORT} -R ${CNL_SSH_REMOTE_PORT}:localhost:${CNL_SSH_LOCAL_PORT}
 Restart=always
 RestartSec=5s
 

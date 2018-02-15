@@ -37,10 +37,9 @@ read -s cnl_password
 cnl_app_url=`cnl config get CNL_APP_URL | cut -d'=' -f2`
 app_monitor_time=`cnl config get CNL_APP_MONITOR_TIME | cut -d'=' -f2`
 serial=`cnl serial`
-pubkey1=`sudo cat /root/.ssh/id_rsa.pub`
-pubkey2=`cat $HOME/.ssh/id_rsa.pub`
+pubkey=`cat $CNL_SSH_KEY.pub`
 echo ""
-response=$(sudo curl --silent --user $cnl_username:$cnl_password --data-urlencode "device_data=$HOSTNAME,$serial,$USER,$pubkey1,$pubkey2,$cnl_app_url,$app_monitor_time,$ssh_local_port" $url_add_device)
+response=$(sudo curl --silent --user $cnl_username:$cnl_password --data-urlencode "device_data=$HOSTNAME,$serial,$USER,$pubkey,$cnl_app_url,$app_monitor_time,$ssh_local_port" $url_add_device)
 
 if [[ $response = *"Duplicate entry"* ]]; then
   echo "*** ERROR: device already registered ($response)."
@@ -68,6 +67,7 @@ else
   echo "*** Setting CNL_SSH_REMOTE_PORT=$ssh_remote_port"
   sudo sh -c "echo 'CNL_SSH_REMOTE_PORT=$ssh_remote_port' >> /etc/cnl.conf"
   
+  sudo mkdir /root/.ssh
   sudo ssh-keyscan -p$server_ssh_port $server_url | sudo tee -a /root/.ssh/known_hosts
 
   echo "*************************************"
