@@ -39,6 +39,7 @@
 
 static int cnl_update_cb(const char * cmd, char * rsp, size_t rsp_len);
 static int cnl_remove_cb(const char * cmd, char * rsp, size_t rsp_len);
+static int cnl_build_cb(const char * cmd, char * rsp, size_t rsp_len);
 static int cnl_clean_cb(const char * cmd, char * rsp, size_t rsp_len);
 static int cnl_status_cb(const char * cmd, char * rsp, size_t rsp_len);
 static int cnl_journal_cb(const char * cmd, char * rsp, size_t rsp_len);
@@ -66,6 +67,7 @@ static int monitor_dowork;
 static cnl_cmd_t commands[] = {
 		{"update", cnl_update_cb},
 		{"remove", cnl_remove_cb},
+		{"build", cnl_build_cb},
 		{"clean", cnl_clean_cb},
 		{"status", cnl_status_cb},
 		{"journal", cnl_journal_cb},
@@ -234,6 +236,16 @@ static int cnl_update_cb(const char * cmd, char * rsp, size_t rsp_len)
 	char icmd[PATH_MAX];
 	char irsp[PATH_MAX];
 	snprintf(icmd, PATH_MAX, "make -C %s update 2>&1", getenv("CNL_APP_PATH"));
+	int rv = cnl_run(icmd, irsp, PATH_MAX);
+	snprintf(rsp, rsp_len, "%s\n%s(%d)\n", irsp, rv == 0 ? "OK" : "ERROR", rv);
+	return rv;
+}
+
+static int cnl_build_cb(const char * cmd, char * rsp, size_t rsp_len)
+{
+	char icmd[PATH_MAX];
+	char irsp[PATH_MAX];
+	snprintf(icmd, PATH_MAX, "make -C %s 2>&1", getenv("CNL_APP_PATH"));
 	int rv = cnl_run(icmd, irsp, PATH_MAX);
 	snprintf(rsp, rsp_len, "%s\n%s(%d)\n", irsp, rv == 0 ? "OK" : "ERROR", rv);
 	return rv;

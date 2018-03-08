@@ -46,6 +46,7 @@ if [[ $response = *"Duplicate entry"* ]]; then
 elif [[ $response = *"ERROR"* ]]
 then
   echo "*** ERROR registering device."
+  echo "*** Server response: $response"
 else
   server_url=`echo $response | cut -d',' -f2`
   echo "*** Setting CNL_SSH_SERVER_URL=$server_url"
